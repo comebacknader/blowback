@@ -139,7 +139,9 @@ int main(void) {
     f32 movement_y = 100.0f;
 
     b32 right_pressed = false;
+    b32 left_pressed = false;
     b32 up_pressed = false;
+    b32 down_pressed = false;
     while (game_loop) {
 
         SDL_Event event;
@@ -161,8 +163,14 @@ int main(void) {
                     case SDLK_RIGHT:
                         right_pressed = true;
                         break;
+                    case SDLK_LEFT:
+                        left_pressed = true;
+                        break;
                     case SDLK_UP:
                         up_pressed = true;
+                        break;
+                    case SDLK_DOWN:
+                        down_pressed = true;
                         break;
                     default:
                         break;
@@ -172,8 +180,14 @@ int main(void) {
                     case SDLK_RIGHT:
                         right_pressed = false;
                         break;
+                    case SDLK_LEFT:
+                        left_pressed = false;
+                        break;
                     case SDLK_UP:
                         up_pressed = false;
+                        break;
+                    case SDLK_DOWN:
+                        down_pressed = false;
                         break;
                     default: 
                         break;
@@ -184,7 +198,7 @@ int main(void) {
         }
 
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-        glClearColor(0.3f, 0.5f, 0.7f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shader_program);
@@ -213,6 +227,14 @@ int main(void) {
         if (up_pressed) {
             movement_y += 10.0f;
         } 
+
+        if (down_pressed) {
+            movement_y -= 10.0f;
+        }
+        
+        if (left_pressed) {
+            movement_x -= 10.0f;
+        }
         
         m4 model = HMM_M4D(1.0f);
 

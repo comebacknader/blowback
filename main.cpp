@@ -12,14 +12,15 @@
 
 /*
 
-TODO(Nader): Get timing information using SDL: fps, dt  
+TODO(Nader): Separate platform layer from gameplace code
+TODO(Nader): Implement Hot Reloading
+
 
 */
 
 const f32 WINDOW_WIDTH = 1280.0f;
 const f32 WINDOW_HEIGHT = 720.0f;
 
-// Must be freed
 char *
 read_file(char *filename) {
     char *buffer;
@@ -142,8 +143,17 @@ int main(void) {
     b32 left_pressed = false;
     b32 up_pressed = false;
     b32 down_pressed = false;
-    while (game_loop) {
 
+    u32 old_time = 0;
+    u32 new_time = 0;
+    u32 dt = 0;
+    f32 fps = 0.0f;
+    while (game_loop) {
+        old_time = new_time;
+        new_time = SDL_GetTicks();
+        dt = new_time - old_time;
+        fps = 1.0f/((f32)dt/1000.0f);
+        printf("%0.0ffps | %dms/f \n", fps, dt);
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
@@ -214,8 +224,6 @@ int main(void) {
 
         glUniformMatrix4fv(view_location, 1, GL_FALSE, &view.Elements[0][0]);
         glUniformMatrix4fv(projection_location, 1, GL_FALSE, &projection.Elements[0][0]);
-
-        glBindVertexArray(vao);
 
         v3 scale = v3(100.0f, 100.0f, 0.0f);
         v3 translation = v3(movement_x, movement_y, 0.0f);

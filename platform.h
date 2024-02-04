@@ -87,15 +87,7 @@ typedef struct GameInput
 
 	f32 dt_for_frame;
 
-	// NOTE(Nader): I don't understand why each Input has 5 controllers...
-	GameControllerInput controllers[5];
+	GameControllerInput controller;
 } GameInput;
 
-inline GameControllerInput* get_controller(GameInput* input, u8 index)
-{
-	// TODO(Nader): Add an assert(index < array_count(input->controllers))
-
-	GameControllerInput* result = &input->controllers[index];
-	return(result);
-}
 

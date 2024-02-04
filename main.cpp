@@ -4,15 +4,19 @@
 #undef main
 
 #include "platform.h"
-
 #define GL_LITE_IMPLEMENTATION
 #include "gl_lite.h"
 
 #include "shader.cpp"
+#include "blowback.cpp"
 
 /*
 
-TODO(Nader): Separate platform layer from gameplace code
+TODO(Nader): Get a better understanding of the world. 
+    - Have a camera that can move throughout a level
+    - A level consists of a 2D array of 1's/0's
+TODO(Nader): Separate platform layer from gameplay code
+    - Pass in Input
 TODO(Nader): Implement Hot Reloading
 
 
@@ -136,8 +140,8 @@ int main(void) {
     v3 camera_right = HMM_NormV3(HMM_Cross(up, camera_direction));
     v3 camera_up = HMM_Cross(camera_direction, camera_right);
 
-    f32 movement_x = 100.0f;
-    f32 movement_y = 100.0f;
+    f32 movement_x = 0.0f;
+    f32 movement_y = 0.0f;
 
     b32 right_pressed = false;
     b32 left_pressed = false;
@@ -225,8 +229,11 @@ int main(void) {
         glUniformMatrix4fv(view_location, 1, GL_FALSE, &view.Elements[0][0]);
         glUniformMatrix4fv(projection_location, 1, GL_FALSE, &projection.Elements[0][0]);
 
-        v3 scale = v3(100.0f, 100.0f, 0.0f);
-        v3 translation = v3(movement_x, movement_y, 0.0f);
+        v3 scale = v3(50.0f, 50.0f, 0.0f);
+        // adjusting is having bottom left of image be where it is drawn.
+        f32 adjust_x = scale.X;
+        f32 adjust_y = scale.Y;
+        v3 translation = v3(movement_x + adjust_x, movement_y + adjust_y, 0.0f);
 
         if (right_pressed) {
             movement_x += 10.0f;

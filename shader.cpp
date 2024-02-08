@@ -10,7 +10,7 @@ check_shader_errors(char *type, u32 object)
 		{
 			glGetShaderInfoLog(object, 512, NULL, info_log);
 			char temp[1024];
-			if (strcmp("VERTEX", type) != 0)
+			if (strcmp("VERTEX", type) == 0)
 			{
 				wsprintfA(temp, "ERROR::SHADER::VERTEX::COMPILATION::FAILED - %s \n", info_log);
 			}
@@ -22,13 +22,13 @@ check_shader_errors(char *type, u32 object)
 		}
 		else
 		{
-			if (strcmp("VERTEX", type) != 0)
+			if (strcmp("VERTEX", type) == 0)
 			{
-				printf("Vertex Shader compiled successfully. \n");
+				OutputDebugStringA("Vertex Shader compiled successfully. \n");
 			}
 			else
 			{
-				printf("Fragment Shader compiled successfully. \n");
+				OutputDebugStringA("Fragment Shader compiled successfully. \n");
 			}
 		}
 	}
@@ -40,11 +40,11 @@ check_shader_errors(char *type, u32 object)
 			glGetShaderInfoLog(object, 512, NULL, info_log);
 			char temp[1024];
 			wsprintfA(temp, "ERROR::SHADER::PROGRAM::LINKING::FAILED - %s \n", info_log);
-			printf(temp);
+			OutputDebugStringA(temp);
 		}
 		else
 		{
-			printf("Shader Program linked successfully. \n");
+			OutputDebugStringA("Shader Program linked successfully. \n");
 		}
 	}
 }

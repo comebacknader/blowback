@@ -11,15 +11,23 @@
 
 /*
 
-TODO(Nader): Switch out from SDL to Win32, and stop
-using printf() and change read_file 
+TODO(Nader): Separate platform layer from gameplay code
+    - Pass in Input
+	- Gameplay code just wants to draw a an object with
+	- certain dimensions
+	- DrawRect(v2{width, height}, v2{positionX, positionY}, color v4{rgba})
+	- The platform layer implement drawing this, and the gameplay code
+	just calls this global function
+TODO(Nader): Implement Hot Reloading
+TODO(Nader): Before setting up world, set up static level: 
+	-set up walls and ground in 1/0 2d array
+	-have player collide
+	-have player jump
+	-have player accelerate
 TODO(Nader): Get a better understanding of the world. 
     - Setup a camera that moves
     - Have a camera that can move throughout a level
     - A level consists of a 2D array of 1's/0's
-TODO(Nader): Separate platform layer from gameplay code
-    - Pass in Input
-TODO(Nader): Implement Hot Reloading
 
 
 */
@@ -189,8 +197,7 @@ win32_process_pending_messages(GameControllerInput *keyboard_controller)
 		case WM_SYSKEYDOWN:
 		case WM_SYSKEYUP:
 		case WM_KEYDOWN:
-		case WM_KEYUP:
-		{
+		{ 
 			// This should be using keyboard_controller to store movement
 			u32 vk_code = (u32)message.wParam;
 			b32 was_down = ((message.lParam & (1 << 30)) != 0);
@@ -217,6 +224,37 @@ win32_process_pending_messages(GameControllerInput *keyboard_controller)
 				else if (vk_code == VK_RIGHT)
 				{
 					keyboard_controller->move_right.ended_down = true;
+				}
+			}
+		} break;	
+		case WM_KEYUP:
+		{
+			// This should be using keyboard_controller to store movement
+			u32 vk_code = (u32)message.wParam;
+			b32 was_down = ((message.lParam & (1 << 30)) != 0);
+			b32 is_down = ((message.lParam & (1 << 31)) == 0);
+
+			if (was_down != is_down)
+			{
+				if (vk_code == VK_ESCAPE)
+				{
+					game_loop = false;
+				}
+				else if (vk_code == VK_UP)
+				{
+					keyboard_controller->move_up.ended_down = false;
+				}
+				else if (vk_code == VK_DOWN)
+				{
+					keyboard_controller->move_down.ended_down = false;
+				}
+				else if (vk_code == VK_LEFT)
+				{
+					keyboard_controller->move_left.ended_down = false;
+				}
+				else if (vk_code == VK_RIGHT)
+				{
+					keyboard_controller->move_right.ended_down = false;
 				}
 			}
 		} break;
@@ -327,16 +365,16 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             f32 movement_x = 0.0f;
             f32 movement_y = 0.0f;
 
-            b32 right_pressed = false;
-            b32 left_pressed = false;
-            b32 up_pressed = false;
-            b32 down_pressed = false;
-
             u32 old_time = 0;
             u32 new_time = 0;
             u32 dt = 0;
             f32 fps = 0.0f;
-            while (game_loop) {
+			GameInput input = { 0 };
+			GameControllerInput keyboard_controller = {0};
+			keyboard_controller.is_connected = true;
+			input.controller = keyboard_controller; 
+            while (game_loop) 
+			{
                 old_time = new_time;
                 //new_time = SDL_GetTicks();
                 //dt = new_time - old_time;
@@ -344,6 +382,13 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
         #if 0
                 printf("%0.0ffps | %dms/f \n", fps, dt);
         #endif
+				HDC window_device_context = GetDC(window);
+				RECT client_rect;
+				GetClientRect(window, &client_rect);
+				int window_width = client_rect.right - client_rect.left;
+				int window_height = client_rect.bottom - client_rect.top;
+
+				win32_process_pending_messages(&keyboard_controller);
 
                 //OutputDebugStringA("GOT HERE \n");
                 glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -370,19 +415,19 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
                 f32 adjust_y = scale.Y;
                 v3 translation = v3(movement_x + adjust_x, movement_y + adjust_y, 0.0f);
 
-                if (right_pressed) {
+                if (keyboard_controller.move_right.ended_down) {
                     movement_x += 10.0f;
                 }
 
-                if (up_pressed) {
+                if (keyboard_controller.move_up.ended_down) {
                     movement_y += 10.0f;
                 } 
 
-                if (down_pressed) {
+                if (keyboard_controller.move_down.ended_down) {
                     movement_y -= 10.0f;
                 }
                 
-                if (left_pressed) {
+                if (keyboard_controller.move_left.ended_down) {
                     movement_x -= 10.0f;
                 }
                 
@@ -400,7 +445,8 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
                 glUniformMatrix4fv(model_location, 1, GL_FALSE, &model.Elements[0][0]);
 
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+				SwapBuffers(window_device_context);
+				ReleaseDC(window, window_device_context);
 
             }
 

@@ -3,3 +3,5 @@
 *.ilk
 *.obj
 /.vs
+/build
+/.vscode

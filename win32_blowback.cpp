@@ -5,29 +5,27 @@
 #include "platform.h"
 #define GL_LITE_IMPLEMENTATION
 #include "gl_lite.h"
+#include "blowback.h"
 
 #include "shader.cpp"
 #include "blowback.cpp"
 
 /*
-
+  
+  
 TODO(Nader): Separate platform layer from gameplay code
     - Pass in Input
-	- Gameplay code just wants to draw a an object with
+	- Pass in Memory - this saves state, so my variables outside of 
+	- game loop can come in.
+	Gameplay code just wants to draw an object with
 	- certain dimensions
 	- DrawRect(v2{width, height}, v2{positionX, positionY}, color v4{rgba})
 	- The platform layer implement drawing this, and the gameplay code
 	just calls this global function
 TODO(Nader): Implement Hot Reloading
-TODO(Nader): Before setting up world, set up static level: 
-	-set up walls and ground in 1/0 2d array
-	-have player collide
-	-have player jump
-	-have player accelerate
-TODO(Nader): Get a better understanding of the world. 
-    - Setup a camera that moves
-    - Have a camera that can move throughout a level
-    - A level consists of a 2D array of 1's/0's
+TODO(Nader): Have camera track player movement
+TODO(Nader): Implement playback for debugging and for replays
+TODO(Nader): Implement fixed point deterministic physics
 
 
 */
@@ -293,6 +291,14 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             game_loop = true;
             b32 full_screen = false;
 
+			GameMemory memory = {};
+			memory.permanent_storage_size = megabytes(64);
+			LPVOID base_address = 0;
+			memory.permanent_storage = VirtualAlloc(base_address, memory.permanent_storage_size,
+											MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+
+
+
             char* sprite_vertex_filepath = "G:\\work\\blowback\\vertex_shader.vert";
             char* sprite_fragment_filepath = "G:\\work\\blowback\\fragment_shader.frag";
             FileReadResults sprite_vertex_file = read_file_to_memory(sprite_vertex_filepath);
@@ -395,56 +401,8 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
                 glClearColor(0.8f, 0.2f, 0.5f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT);
 
-                glUseProgram(shader_program);
+				game_update_and_render(&memory, &input);
 
-                m4 view = m4_diagonal(1.0f);
-                view = HMM_LookAt_RH(camera_position, HMM_AddV3(camera_position, camera_front), camera_up);
-
-                m4 projection = m4_diagonal(1.0f);
-                projection = HMM_Orthographic_RH_NO(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, -0.1f, 1000.0f);
-
-                u32 view_location = glGetUniformLocation(shader_program, "view");
-                u32 projection_location = glGetUniformLocation(shader_program, "projection");
-
-                glUniformMatrix4fv(view_location, 1, GL_FALSE, &view.Elements[0][0]);
-                glUniformMatrix4fv(projection_location, 1, GL_FALSE, &projection.Elements[0][0]);
-
-                v3 scale = v3(50.0f, 50.0f, 0.0f);
-                // adjusting is having bottom left of image be where it is drawn.
-                f32 adjust_x = scale.X;
-                f32 adjust_y = scale.Y;
-                v3 translation = v3(movement_x + adjust_x, movement_y + adjust_y, 0.0f);
-
-                if (keyboard_controller.move_right.ended_down) {
-                    movement_x += 10.0f;
-                }
-
-                if (keyboard_controller.move_up.ended_down) {
-                    movement_y += 10.0f;
-                } 
-
-                if (keyboard_controller.move_down.ended_down) {
-                    movement_y -= 10.0f;
-                }
-                
-                if (keyboard_controller.move_left.ended_down) {
-                    movement_x -= 10.0f;
-                }
-                
-                m4 model = HMM_M4D(1.0f);
-
-                // Scale
-                model = HMM_Scale(scale);
-
-                // Translation
-                model.Columns[3].X = translation.X;
-                model.Columns[3].Y = translation.Y;
-                model.Columns[3].Z = 0.0f;
-
-                u32 model_location = glGetUniformLocation(shader_program, "model");
-                glUniformMatrix4fv(model_location, 1, GL_FALSE, &model.Elements[0][0]);
-
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 				SwapBuffers(window_device_context);
 				ReleaseDC(window, window_device_context);
 

@@ -270,6 +270,8 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
         LPSTR command_line, int show_code) 
 {
 
+	Win32State win32_state = {};
+
 	WNDCLASSA window_class = { 0 };
 	window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	window_class.lpfnWndProc = win32_main_window_callback;
@@ -291,11 +293,16 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             game_loop = true;
             b32 full_screen = false;
 
-			GameMemory memory = {};
-			memory.permanent_storage_size = megabytes(64);
 			LPVOID base_address = 0;
-			memory.permanent_storage = VirtualAlloc(base_address, memory.permanent_storage_size,
+			GameMemory game_memory = {};
+			game_memory.permanent_storage_size = megabytes(64);
+			game_memory.transient_storage_size = gigabytes(1);
+			win32_state.total_size =  game_memory.permanent_storage_size + game_memory.transient_storage_size;
+			win32_state.game_memory_block = VirtualAlloc(base_address, memory.permanent_storage_size,
 											MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+			game_memory.permanent_storage = win32_state.game_memory_block;
+			game_memory.transient_storage = ((u8 *)game_memory.permanent_storage +
+											game_memory.permanent_storage_size);
 
 
 
@@ -401,7 +408,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
                 glClearColor(0.8f, 0.2f, 0.5f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT);
 
-				game_update_and_render(&memory, &input);
+				game_update_and_render(&game_memory, &input);
 
 				SwapBuffers(window_device_context);
 				ReleaseDC(window, window_device_context);

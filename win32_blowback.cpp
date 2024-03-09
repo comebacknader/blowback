@@ -304,8 +304,6 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			game_memory.transient_storage = ((u8 *)game_memory.permanent_storage +
 											game_memory.permanent_storage_size);
 
-
-
             char* sprite_vertex_filepath = "G:\\work\\blowback\\vertex_shader.vert";
             char* sprite_fragment_filepath = "G:\\work\\blowback\\fragment_shader.frag";
             FileReadResults sprite_vertex_file = read_file_to_memory(sprite_vertex_filepath);
@@ -366,22 +364,6 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
-            v3 camera_position = v3(0.0f, 0.0f, 3.0f);
-            v3 camera_front = v3(0.0f, 0.0f, -1.0f);
-            v3 up = v3(0.0f, 1.0f, 0.0f);
-
-            v3 camera_target = v3(0.0f, 0.0f, 0.0f);
-            v3 camera_direction = HMM_NormV3(HMM_SubV3(camera_position, camera_target));
-            v3 camera_right = HMM_NormV3(HMM_Cross(up, camera_direction));
-            v3 camera_up = HMM_Cross(camera_direction, camera_right);
-
-            f32 movement_x = 0.0f;
-            f32 movement_y = 0.0f;
-
-            u32 old_time = 0;
-            u32 new_time = 0;
-            u32 dt = 0;
-            f32 fps = 0.0f;
 			GameInput input = { 0 };
 			GameControllerInput keyboard_controller = {0};
 			keyboard_controller.is_connected = true;

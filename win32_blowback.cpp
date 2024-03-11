@@ -6,12 +6,12 @@
 #define GL_LITE_IMPLEMENTATION
 #include "gl_lite.h"
 #include "blowback.h"
+#include "win32_blowback.h"
 
 #include "shader.cpp"
 #include "blowback.cpp"
 
 /*
-  
   
 TODO(Nader): Separate platform layer from gameplay code
     - Pass in Input
@@ -298,7 +298,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			game_memory.permanent_storage_size = megabytes(64);
 			game_memory.transient_storage_size = gigabytes(1);
 			win32_state.total_size =  game_memory.permanent_storage_size + game_memory.transient_storage_size;
-			win32_state.game_memory_block = VirtualAlloc(base_address, memory.permanent_storage_size,
+			win32_state.game_memory_block = VirtualAlloc(base_address, game_memory.permanent_storage_size,
 											MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 			game_memory.permanent_storage = win32_state.game_memory_block;
 			game_memory.transient_storage = ((u8 *)game_memory.permanent_storage +
@@ -370,7 +370,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			input.controller = keyboard_controller; 
             while (game_loop) 
 			{
-                old_time = new_time;
+                //old_time = new_time;
                 //new_time = SDL_GetTicks();
                 //dt = new_time - old_time;
                 //fps = 1.0f/((f32)dt/1000.0f);

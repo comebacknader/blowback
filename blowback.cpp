@@ -72,7 +72,7 @@ game_update_and_render(GameMemory *memory, GameInput *input)
     model.Columns[3].Y = translation.Y;
     model.Columns[3].Z = 0.0f;
 
-    u32 model_location = glGetUniformLocation(shader_program, "model");
+    u32 model_location = glGetUniformLocation(game_state->shader_program, "model");
     glUniformMatrix4fv(model_location, 1, GL_FALSE, &model.Elements[0][0]);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

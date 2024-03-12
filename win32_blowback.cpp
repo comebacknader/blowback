@@ -390,11 +390,10 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
                 glClearColor(0.8f, 0.2f, 0.5f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT);
 
-				game_update_and_render(&game_memory, &input);
+				game_update_and_render(&game_memory, &input, shader_program);
 
 				SwapBuffers(window_device_context);
 				ReleaseDC(window, window_device_context);
-
             }
 
         }

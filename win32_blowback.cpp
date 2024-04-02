@@ -382,8 +382,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 				GetClientRect(window, &client_rect);
 				int window_width = client_rect.right - client_rect.left;
 				int window_height = client_rect.bottom - client_rect.top;
-
-				win32_process_pending_messages(&keyboard_controller);
+				win32_process_pending_messages(&input.controller);
 
                 //OutputDebugStringA("GOT HERE \n");
                 glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);

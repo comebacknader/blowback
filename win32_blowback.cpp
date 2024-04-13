@@ -15,6 +15,8 @@
 
 Trap House: that should be the name of the game. 
 You build your own trap house. It's like a base.
+I would like to build an engine to have deterministic physics.
+
 
 TODO(Nader): Enforce video frame rate
 TODO(Nader): Render a tile map
@@ -317,6 +319,8 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			game_memory.transient_storage = ((u8 *)game_memory.permanent_storage +
 											game_memory.permanent_storage_size);
 
+            
+			// RENDERER SETUP
             char* sprite_vertex_filepath = "G:\\work\\blowback\\vertex_shader.vert";
             char* sprite_fragment_filepath = "G:\\work\\blowback\\fragment_shader.frag";
             FileReadResults sprite_vertex_file = read_file_to_memory(sprite_vertex_filepath);
@@ -377,15 +381,18 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
+			// INPUT SETUP
 			GameInput input = { 0 };
 			GameControllerInput keyboard_controller = {0};
 			keyboard_controller.is_connected = true;
 			input.controller = keyboard_controller; 
 
+			// -- START GAME LOOP TIMING -- 
 			LARGE_INTEGER last_counter;
 			QueryPerformanceCounter(&last_counter);
 			u64 last_cycle_count = __rdtsc();
 
+			// GAME LOOP
             while (game_loop) 
 			{
 				HDC window_device_context = GetDC(window);
@@ -399,10 +406,13 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
                 glClearColor(0.8f, 0.2f, 0.5f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT);
 
+				// UPDATE & RENDER
 				game_update_and_render(&game_memory, &input, shader_program);
 
 				SwapBuffers(window_device_context);
 				ReleaseDC(window, window_device_context);
+
+				// -- END GAME LOOP TIMING --
 
 				u64 end_cycle_count = __rdtsc();				
 

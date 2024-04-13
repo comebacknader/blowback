@@ -1,11 +1,10 @@
 // TODO(Nader): Don't pass in shader_program into the function. 
-// Instead, be able to abstract away the renderer
 void
 game_update_and_render(GameMemory *memory, GameInput *input, u32 shader_program) 
 {
     GameState *game_state = (GameState *)memory->permanent_storage;
     // TODO(Nader): Move this initialization into the platform layer
-    // TODO(Nader): Pass in the game_state? Why is it 
+    // TODO(Nader): Pass in the game_state? 
     if (!memory->is_initialized) {
         game_state->camera_position = v3(0.0f, 0.0f, 3.0f);
         game_state->camera_front = v3(0.0f, 0.0f, -1.0f);
@@ -88,6 +87,5 @@ game_update_and_render(GameMemory *memory, GameInput *input, u32 shader_program)
     glUniformMatrix4fv(model_location, 1, GL_FALSE, &model.Elements[0][0]);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
 
 }

@@ -13,11 +13,6 @@
 
 /*
 
-Trap House: that should be the name of the game. 
-You build your own trap house. It's like a base.
-I would like to build an engine to have deterministic physics.
-
-
 TODO(Nader): Enforce video frame rate
 TODO(Nader): Render a tile map
 TODO(Nader): Have the camera follow the player as he travels between different tilemaps

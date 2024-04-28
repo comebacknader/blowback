@@ -13,7 +13,6 @@
 
 /*
 
-TODO(Nader): Enforce video frame rate
 TODO(Nader): Render a tile map
 TODO(Nader): Have the camera follow the player as he travels between different tilemaps
 	- Then I'll have an understanding of rendering offscreen items and coordinate systems 
@@ -417,9 +416,6 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 				SwapBuffers(window_device_context);
 				ReleaseDC(window, window_device_context);
 
-				// Need to see if we're less than the number of milliseconds per frame we're taking, and
-				// if we are, wait until we get there, then flip to the next frame.
-
 				// -- END GAME LOOP TIMING --
 
 				u64 end_cycle_count = __rdtsc();				
@@ -428,19 +424,23 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 
 				u64 cycles_elapsed = end_cycle_count - last_cycle_count;
 				i64 counter_elapsed = end_counter.QuadPart - last_counter.QuadPart;
-				f32 seconds_elapsed_for_work = (((f32)counter_elapsed)/ (f32)global_performance_counter_frequency);
-				f32 seconds_elapsed_for_frame = seconds_elapsed_for_work;
+				f32 work_seconds_elapsed = win32_get_seconds_elapsed(last_counter, end_counter);
+				f32 seconds_elapsed_for_frame = work_seconds_elapsed;
 
-				while(seconds_elapsed_for_frame < target_seconds_elapsed_per_frame)
+				if(seconds_elapsed_for_frame < target_seconds_elapsed_per_frame)
 				{
-					seconds_elapsed_for_frame = win32_get_seconds_elapsed(last_counter, win32_get_wall_clock());
+					while(seconds_elapsed_for_frame < target_seconds_elapsed_per_frame)
+					{
+						seconds_elapsed_for_frame = win32_get_seconds_elapsed(last_counter, win32_get_wall_clock());
+					}
+	
 				}
-
 				end_counter = win32_get_wall_clock();
-				last_counter = end_counter;
-
+				counter_elapsed = end_counter.QuadPart - last_counter.QuadPart;
 				f64 ms_per_frame = 1000.0f*win32_get_seconds_elapsed(last_counter, end_counter);
 				f64 fps = ((f64)global_performance_counter_frequency / (f64)counter_elapsed);
+
+				last_counter = end_counter;
 				
 				char metrics_text[256];
 				_snprintf_s(metrics_text, sizeof(metrics_text), 

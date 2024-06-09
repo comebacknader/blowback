@@ -13,6 +13,7 @@
 
 /*
 
+TODO(Nader): Enforcing a frame rate of 60fps
 TODO(Nader): Render a tile map
 TODO(Nader): Have the camera follow the player as he travels between different tilemaps
 	- Then I'll have an understanding of rendering offscreen items and coordinate systems 
@@ -294,6 +295,9 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 	QueryPerformanceFrequency(&performance_counter_frequency_result);
 	global_performance_counter_frequency = performance_counter_frequency_result.QuadPart;
 
+    UINT desired_scheduler_ms = 1;
+    b32 sleep_is_granular = (timeBeginPeriod(desired_scheduler_ms) == TIMERR_NOERROR);
+ 
 	int monitor_refresh_rate_hz = 60;
 	int game_update_hz = monitor_refresh_rate_hz;
 	f32 target_seconds_elapsed_per_frame = 1.0f / f32(monitor_refresh_rate_hz);
@@ -429,12 +433,32 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 
 				if(seconds_elapsed_for_frame < target_seconds_elapsed_per_frame)
 				{
+					if(sleep_is_granular)
+					{
+						DWORD sleep_ms = (DWORD)(1000.0f * (target_seconds_elapsed_per_frame - seconds_elapsed_for_frame));
+						if(sleep_ms > 0)
+						{
+							Sleep(sleep_ms);
+						}
+					}
+
+					f32 test_seconds_elapsed_for_frame = win32_get_seconds_elapsed(last_counter,
+																					win32_get_wall_clock());
+				
+				 	// TODO(Nader): This assert statement needs to be handled correctly.
+					//asserts(test_seconds_elapsed_for_frame < target_seconds_elapsed_per_frame);
+
 					while(seconds_elapsed_for_frame < target_seconds_elapsed_per_frame)
 					{
 						seconds_elapsed_for_frame = win32_get_seconds_elapsed(last_counter, win32_get_wall_clock());
 					}
-	
 				}
+				else 
+				{
+					// TODO(Nader): Missed frame rate
+					// TODO(Nader): Logging
+				}
+
 				end_counter = win32_get_wall_clock();
 				counter_elapsed = end_counter.QuadPart - last_counter.QuadPart;
 				f64 ms_per_frame = 1000.0f*win32_get_seconds_elapsed(last_counter, end_counter);
@@ -447,8 +471,6 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 					"counter_elapsed: %I64d | ms/f: %.02f | fps: %.02f \n", 
 					counter_elapsed, ms_per_frame, fps);
 				OutputDebugStringA(metrics_text);
-
-
             }
 
 			// END GAME LOOP

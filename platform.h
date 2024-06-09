@@ -38,6 +38,12 @@ typedef HMM_Vec2 v2;
 
 #define array_count(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+#if BLOWBACK_SLOW
+#define asserts(expression) if(!(expression)) { *(int *)0 = 0; }
+#else
+#define asserts(expression)
+#endif
+
 typedef struct GameButtonState
 {
 	int half_transition_count;

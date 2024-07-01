@@ -280,7 +280,6 @@ int CALLBACK
 WinMain(HINSTANCE instance, HINSTANCE previous_instance,
         LPSTR command_line, int show_code) 
 {
-
 	Win32State win32_state = {};
 
 	WNDCLASSA window_class = { 0 };
@@ -329,8 +328,8 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 
             
 			// RENDERER SETUP
-            char* sprite_vertex_filepath = "G:\\work\\blowback\\vertex_shader.vert";
-            char* sprite_fragment_filepath = "G:\\work\\blowback\\fragment_shader.frag";
+            char* sprite_vertex_filepath = "D:\\work\\blowback\\vertex_shader.vert";
+            char* sprite_fragment_filepath = "D:\\work\\blowback\\fragment_shader.frag";
             FileReadResults sprite_vertex_file = read_file_to_memory(sprite_vertex_filepath);
             FileReadResults sprite_fragment_file = read_file_to_memory(sprite_fragment_filepath);
 

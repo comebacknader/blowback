@@ -1,6 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <windows.h>
+#include <xinput.h>
 
 #include "platform.h"
 #define GL_LITE_IMPLEMENTATION
@@ -8,12 +9,14 @@
 #include "blowback.h"
 #include "win32_blowback.h"
 
-#include "shader.cpp"
-#include "blowback.cpp"
+#include "shader.c"
+#include "blowback.c"
 
 /*
 
-TODO(Nader): Enforcing a frame rate of 60fps
+NOTE(Nader): WORD is Windows for 16-bit value
+NOTE(Nader): SHORT is Windows 16-bit signed value
+
 TODO(Nader): Render a tile map
 TODO(Nader): Have the camera follow the player as he travels between different tilemaps
 	- Then I'll have an understanding of rendering offscreen items and coordinate systems 
@@ -30,6 +33,81 @@ global HGLRC rendering_context;
 global b32 game_loop;
 static i64 global_performance_counter_frequency; 
 
+/*
+
+The reason for using these typedef functions is that we don't want to link 
+directly to Xinput.lib, because if it can't find one of these DLL's (Xinput1_4.dll, Xinput9_1_0.dll) on the 
+system, then the game won't load, so we want to load the Windows functions ourselves. 
+
+So we want to get the code into our executable for a Windows binding, and looking up the 
+function pointer so we can call into it without using an import library. 
+
+With these typedefs, we want to do something like 
+
+x_input_get_state *Foo; // A function pointer
+
+We could end it with just doing:
+global x_input_get_state *DynamicXInputGetState;
+
+But Casey wants to be clever, and allow us to use the same name XInputGetState, so
+he does:
+
+global x_input_get_state *XInputGetState_;
+
+And then does a pound define: 
+
+#define XInputGetState XInputGetState_
+
+Which allows the user to just call XInputGetState instead of DynamicXInputGetState. That is 
+what the reasoning is behind having the code below:
+
+typedef DWORD WINAPI x_input_get_state(DWORD dwUserIndex, XINPUT_STATE *pState);
+typedef DWORD WINAPI x_input_set_state(DWORD dwUserIndex, XINPUT_STATE *pVibration);
+global x_input_get_state *XInputGetState_;
+global x_input_set_state *XInputSetState_;
+#define XInputGetState XInputGetState_
+#define XInputGetState XInputSetState_
+
+But when you do this, and the XInput library isn't there, then the code will fail, and we 
+don't want to fail, because the player can just use the keyboard if there's no controller. 
+
+So, we create stubs in that case, leading to the code below.
+
+*/
+#define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState) // function prototype
+#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pVibration) // function prototype
+// NOTE(Nader): Here we define a type for that function prototype so we can use it as a pointer
+typedef X_INPUT_GET_STATE(x_input_get_state);
+typedef X_INPUT_SET_STATE(x_input_set_state);
+
+// NOTE(Nader): These are stubs we define so that our function pointers point to a default function 
+// right off the bat, and the app doesn't crash. 
+X_INPUT_GET_STATE(XInputGetStateStub)
+{
+	return(0);
+}
+
+X_INPUT_SET_STATE(XInputSetStateStub)
+{
+	return(0);
+}
+
+// Setting the pointer to the stub as a default value.
+global x_input_get_state *XInputGetState_ = XInputGetStateStub;
+global x_input_set_state *XInputSetState_ = XInputSetStateStub;
+// A #define in order to be able to use the XInputGetState rather than have to use XInputGetState_ in the code.
+#define XInputGetState XInputGetState_
+#define XInputGetState XInputSetState_
+
+// This will essentially do the steps that the Windows loader does when it loads our program.
+internal void
+win32_load_xinput(void)
+{
+	HMODULE x_input_library = LoadLibrary("");	
+	if (x_input_library)
+	{
+	}
+}
 
 internal f32 
 win32_get_seconds_elapsed(LARGE_INTEGER start, LARGE_INTEGER end)
@@ -299,7 +377,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
  
 	int monitor_refresh_rate_hz = 60;
 	int game_update_hz = monitor_refresh_rate_hz;
-	f32 target_seconds_elapsed_per_frame = 1.0f / f32(monitor_refresh_rate_hz);
+	f32 target_seconds_elapsed_per_frame = 1.0f / (f32)(monitor_refresh_rate_hz);
 
     if (RegisterClassA(&window_class))
     {
@@ -394,7 +472,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			keyboard_controller.is_connected = true;
 			input.controller = keyboard_controller; 
 
-			// -- START GAME LOOP TIMING -- 
+			// START GAME LOOP TIMING  
 			LARGE_INTEGER last_counter;
 			QueryPerformanceCounter(&last_counter);
 			u64 last_cycle_count = __rdtsc();
@@ -403,10 +481,41 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             while (game_loop) 
 			{
 				HDC window_device_context = GetDC(window);
-				RECT client_rect;
-				GetClientRect(window, &client_rect);
-				int window_width = client_rect.right - client_rect.left;
-				int window_height = client_rect.bottom - client_rect.top;
+
+				// TODO(Nader): Should we poll this more frequently? 
+				for (DWORD controller_index = 0;
+					controller_index < XUSER_MAX_COUNT;
+					++controller_index)
+				{
+					XINPUT_STATE controller_state;
+					if (XInputGetState(controller_index, &controller_state) == ERROR_SUCCESS)
+					{
+						// NOTE(Nader): This controller is plugged in
+						// TODO(Nader): See if controller_state.dwPacketNumber increments too rapidly
+						XINPUT_GAMEPAD *pad = &controller_state.Gamepad;
+
+						bool dpad_up = (pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+						bool dpad_down = (pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+						bool dpad_left = (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+						bool dpad_right = (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+						bool dpad_start = (pad->wButtons & XINPUT_GAMEPAD_START);
+						bool dpad_back = (pad->wButtons & XINPUT_GAMEPAD_BACK);
+						bool dpad_left_shoulder = (pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+						bool dpad_right_shoulder = (pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+						bool a_button = (pad->wButtons & XINPUT_GAMEPAD_A);
+						bool b_button = (pad->wButtons & XINPUT_GAMEPAD_B);
+						bool x_button = (pad->wButtons & XINPUT_GAMEPAD_X);
+						bool y_button = (pad->wButtons & XINPUT_GAMEPAD_Y);
+
+						i16 stick_x = pad->sThumbLX;
+						i16 stick_y = pad->sThumbLY;
+					}
+					else
+					{
+						// NOTE(Nader): The controller is not available
+					}
+				}
+
 				win32_process_pending_messages(&input.controller);
 
                 glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -465,11 +574,11 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 
 				last_counter = end_counter;
 				
-				char metrics_text[256];
-				_snprintf_s(metrics_text, sizeof(metrics_text), 
-					"counter_elapsed: %I64d | ms/f: %.02f | fps: %.02f \n", 
-					counter_elapsed, ms_per_frame, fps);
-				OutputDebugStringA(metrics_text);
+				// char metrics_text[256];
+				// _snprintf_s(metrics_text, sizeof(metrics_text), 
+				// 	"counter_elapsed: %I64d | ms/f: %.02f | fps: %.02f \n", 
+				// 	counter_elapsed, ms_per_frame, fps);
+				// OutputDebugStringA(metrics_text);
             }
 
 			// END GAME LOOP

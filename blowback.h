@@ -1,14 +1,16 @@
 #pragma once
 
-struct GameMemory {
+typedef struct GameMemory 
+{
     b32 is_initialized;
     u64 permanent_storage_size;
     void *permanent_storage;
     u64 transient_storage_size;
     void *transient_storage;
-};
+} GameMemory;
 
-struct GameState {
+typedef struct GameState 
+{
     u32 shader_program;
 
     v3 camera_position;
@@ -33,4 +35,4 @@ struct GameState {
 
     f32 window_width;
     f32 window_height;
-};
+} GameState;

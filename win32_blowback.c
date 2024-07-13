@@ -75,7 +75,7 @@ So, we create stubs in that case, leading to the code below.
 
 */
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState) // function prototype
-#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pVibration) // function prototype
+#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration) // function prototype
 // NOTE(Nader): Here we define a type for that function prototype so we can use it as a pointer
 typedef X_INPUT_GET_STATE(x_input_get_state);
 typedef X_INPUT_SET_STATE(x_input_set_state);
@@ -97,15 +97,18 @@ global x_input_get_state *XInputGetState_ = XInputGetStateStub;
 global x_input_set_state *XInputSetState_ = XInputSetStateStub;
 // A #define in order to be able to use the XInputGetState rather than have to use XInputGetState_ in the code.
 #define XInputGetState XInputGetState_
-#define XInputGetState XInputSetState_
+#define XInputSetState XInputSetState_
 
 // This will essentially do the steps that the Windows loader does when it loads our program.
 internal void
 win32_load_xinput(void)
 {
-	HMODULE x_input_library = LoadLibrary("");	
+	// NOTE(Nader): Maybe xinput1_3.dll would support older systems? 
+	HMODULE x_input_library = LoadLibrary("xinput1_4.dll");	
 	if (x_input_library)
 	{
+		XInputGetState = (x_input_get_state *)GetProcAddress(x_input_library, "XInputGetState");
+		XInputSetState = (x_input_set_state *)GetProcAddress(x_input_library, "XInputSetState");
 	}
 }
 
@@ -277,7 +280,8 @@ win32_process_pending_messages(GameControllerInput *keyboard_controller)
 		case WM_SYSKEYUP:
 		case WM_KEYDOWN:
 		{ 
-			// This should be using keyboard_controller to store movement
+			// NOTE(Nader): This should be using keyboard_controller to store movement
+			// NOTE(Nader): A vk_code tells you which key got pressed
 			u32 vk_code = (u32)message.wParam;
 			b32 was_down = ((message.lParam & (1 << 30)) != 0);
 			b32 is_down = ((message.lParam & (1 << 31)) == 0);
@@ -288,19 +292,19 @@ win32_process_pending_messages(GameControllerInput *keyboard_controller)
 				{
 					game_loop = false;
 				}
-				else if (vk_code == VK_UP)
+				else if (vk_code == VK_UP || vk_code == 'W')
 				{
 					keyboard_controller->move_up.ended_down = true;
 				}
-				else if (vk_code == VK_DOWN)
+				else if (vk_code == VK_DOWN || vk_code == 'S')
 				{
 					keyboard_controller->move_down.ended_down = true;
 				}
-				else if (vk_code == VK_LEFT)
+				else if (vk_code == VK_LEFT || vk_code == 'A')
 				{
 					keyboard_controller->move_left.ended_down = true;
 				}
-				else if (vk_code == VK_RIGHT)
+				else if (vk_code == VK_RIGHT || vk_code == 'D')
 				{
 					keyboard_controller->move_right.ended_down = true;
 				}
@@ -319,19 +323,19 @@ win32_process_pending_messages(GameControllerInput *keyboard_controller)
 				{
 					game_loop = false;
 				}
-				else if (vk_code == VK_UP)
+				else if (vk_code == VK_UP || vk_code == 'W')
 				{
 					keyboard_controller->move_up.ended_down = false;
 				}
-				else if (vk_code == VK_DOWN)
+				else if (vk_code == VK_DOWN || vk_code == 'S')
 				{
 					keyboard_controller->move_down.ended_down = false;
 				}
-				else if (vk_code == VK_LEFT)
+				else if (vk_code == VK_LEFT || vk_code == 'A')
 				{
 					keyboard_controller->move_left.ended_down = false;
 				}
-				else if (vk_code == VK_RIGHT)
+				else if (vk_code == VK_RIGHT || vk_code == 'D')
 				{
 					keyboard_controller->move_right.ended_down = false;
 				}
@@ -358,6 +362,7 @@ int CALLBACK
 WinMain(HINSTANCE instance, HINSTANCE previous_instance,
         LPSTR command_line, int show_code) 
 {
+	win32_load_xinput();
 	Win32State win32_state = {};
 
 	WNDCLASSA window_class = { 0 };
@@ -393,6 +398,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             game_loop = true;
             b32 full_screen = false;
 
+			// ALLOCATE GAME MEMORY
 			LPVOID base_address = 0;
 			GameMemory game_memory = {};
 			game_memory.permanent_storage_size = megabytes(64);
@@ -509,6 +515,10 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 
 						i16 stick_x = pad->sThumbLX;
 						i16 stick_y = pad->sThumbLY;
+						if (a_button)
+						{
+							OutputDebugStringA("A button was pressed \n");
+						}
 					}
 					else
 					{

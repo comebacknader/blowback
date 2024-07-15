@@ -14,6 +14,26 @@
 
 /*
 
+	TODO(Nader): Things that need to be done for shippable platform layer: 
+
+	- Saved game locations
+	- Getting a handle to our own executable ifle
+	- Asset loading path
+	- Threading (launch a thread)
+	- Raw Input (support for multiple keyboards) (?)
+	- ClipCursor() (for multimonitor support)
+	- Fullscreen support
+	- WM_SETCURSOR (control cursor visibility)
+	- QueryCancelAutoplay
+	- WM_ACTIVATEAPP (for when we are not the active application)
+	- Blit speed improvements (BitBlt)
+	- Hardware acceleration (OpenGL or Direct3D or BOTH?)
+	- GetKeyboardLayout (for French keyboards, international WASD support)
+
+*/
+
+/*
+
 NOTE(Nader): WORD is Windows for 16-bit value
 NOTE(Nader): SHORT is Windows 16-bit signed value
 
@@ -104,7 +124,7 @@ internal void
 win32_load_xinput(void)
 {
 	// NOTE(Nader): Maybe xinput1_3.dll would support older systems? 
-	HMODULE x_input_library = LoadLibrary("xinput1_4.dll");	
+	HMODULE x_input_library = LoadLibraryA("xinput1_4.dll");	
 	if (x_input_library)
 	{
 		XInputGetState = (x_input_get_state *)GetProcAddress(x_input_library, "XInputGetState");
@@ -402,11 +422,13 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			LPVOID base_address = 0;
 			GameMemory game_memory = {};
 			game_memory.permanent_storage_size = megabytes(64);
-			game_memory.transient_storage_size = gigabytes(1);
 			win32_state.total_size =  game_memory.permanent_storage_size + game_memory.transient_storage_size;
 			win32_state.game_memory_block = VirtualAlloc(base_address, game_memory.permanent_storage_size,
 											MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 			game_memory.permanent_storage = win32_state.game_memory_block;
+
+			// Ephemeral storage
+			game_memory.transient_storage_size = gigabytes(1);
 			game_memory.transient_storage = ((u8 *)game_memory.permanent_storage +
 											game_memory.permanent_storage_size);
 

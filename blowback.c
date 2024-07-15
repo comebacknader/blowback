@@ -1,5 +1,21 @@
-// TODO(Nader): Don't pass in shader_program into the function. 
-void
+/*
+
+    TODO(Nader): Services that the platform layer provides to the game.
+
+*/
+
+/* 
+
+NOTE(Nader): Services that the game provides to the platform layer
+TODO(Nader): Don't pass in shader_program into the function. 
+TODO(Nader): Three things should be passed in to game_update_and_render:
+    - controller/keyboard input
+    - bitmap buffer to use
+    - sound buffer to use
+    - timing
+
+*/
+internal void
 game_update_and_render(GameMemory *memory, GameInput *input, u32 shader_program) 
 {
     GameState *game_state = (GameState *)memory->permanent_storage;

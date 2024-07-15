@@ -1,5 +1,7 @@
 #pragma once
 
+internal void game_update_and_render();
+
 typedef struct GameMemory 
 {
     b32 is_initialized;

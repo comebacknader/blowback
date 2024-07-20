@@ -57,7 +57,8 @@ static i64 global_performance_counter_frequency;
 
 The reason for using these typedef functions is that we don't want to link 
 directly to Xinput.lib, because if it can't find one of these DLL's (Xinput1_4.dll, Xinput9_1_0.dll) on the 
-system, then the game won't load, so we want to load the Windows functions ourselves. 
+system, then the game won't load, so we want to load the Windows functions ourselves, so that
+if they DON'T load, we can stub out the functions and the game won't crash. 
 
 So we want to get the code into our executable for a Windows binding, and looking up the 
 function pointer so we can call into it without using an import library. 
@@ -605,11 +606,20 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 				f64 fps = ((f64)global_performance_counter_frequency / (f64)counter_elapsed);
 
 				last_counter = end_counter;
-				
+				char metrics_text[256];
+				sprintf_s(metrics_text, sizeof(metrics_text), 
+					"counter_elapsed: %I64d  | qlobal_peformance_counter_frequency: %I64d \n", 
+						counter_elapsed,
+						global_performance_counter_frequency);
+				OutputDebugStringA(metrics_text);			
+
 				// char metrics_text[256];
-				// _snprintf_s(metrics_text, sizeof(metrics_text), 
-				// 	"counter_elapsed: %I64d | ms/f: %.02f | fps: %.02f \n", 
-				// 	counter_elapsed, ms_per_frame, fps);
+				// sprintf_s(
+				// 	metrics_text, 
+				// 	sizeof(metrics_text),
+				// 	"ms/f: %.02f | fps: %.02f \n", 
+				// 	ms_per_frame, 
+				// 	fps);
 				// OutputDebugStringA(metrics_text);
             }
 

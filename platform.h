@@ -44,6 +44,13 @@ typedef HMM_Vec2 v2;
 #define asserts(expression)
 #endif
 
+/*
+
+half_transition refers to a press down or a release up. 
+We are recording the half_transition_count, the # of half transitions
+for a current frame.  
+
+*/
 typedef struct GameButtonState
 {
 	int half_transition_count;

@@ -4,9 +4,9 @@
 #include <xinput.h>
 
 #include "platform.h"
+#include "blowback.h"
 #define GL_LITE_IMPLEMENTATION
 #include "gl_lite.h"
-#include "blowback.h"
 #include "win32_blowback.h"
 
 #include "shader.c"
@@ -211,7 +211,7 @@ win32_init_opengl(HWND window)
 	{
 		OutputDebugStringA("Failed to make current openGL rendering context \n");
 	}
-	int initialized_opengl = gl_lite_init();
+	b32 initialized_opengl = gl_lite_init();
 	if (!initialized_opengl)
 	{
 		OutputDebugStringA("Failed to dynamically load function pointers \n");
@@ -379,12 +379,24 @@ win32_get_wall_clock()
 	return(wall_clock);
 };
 
+internal void
+win32_process_xinput_digital_button()
+{
+	// NOTE(Nader): need to check if the button was ended_down before, if it was, 
+	// then there was a half transition, if it wasn't ended_down before, then there 
+	// wasn't a half_transition.
+	button->half_transition_count = (was_it_down_previously == button->ended_down) ? 1 : 0;
+	button->ended_down = (pad->wButtons & XINPUT_GAMEPAD_START); 
+
+
+}
+
 int CALLBACK
 WinMain(HINSTANCE instance, HINSTANCE previous_instance,
         LPSTR command_line, int show_code) 
 {
 	win32_load_xinput();
-	Win32State win32_state = {};
+	Win32State win32_state = { 0 };
 
 	WNDCLASSA window_class = { 0 };
 	window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -421,7 +433,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 
 			// ALLOCATE GAME MEMORY
 			LPVOID base_address = 0;
-			GameMemory game_memory = {};
+			GameMemory game_memory = { 0 };
 			game_memory.permanent_storage_size = megabytes(64);
 			win32_state.total_size =  game_memory.permanent_storage_size + game_memory.transient_storage_size;
 			win32_state.game_memory_block = VirtualAlloc(base_address, game_memory.permanent_storage_size,
@@ -495,12 +507,6 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
-			// INPUT SETUP
-			GameInput input = { 0 };
-			GameControllerInput keyboard_controller = {0};
-			keyboard_controller.is_connected = true;
-			input.controller = keyboard_controller; 
-
 			// START GAME LOOP TIMING  
 			LARGE_INTEGER last_counter;
 			QueryPerformanceCounter(&last_counter);
@@ -509,6 +515,15 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			// GAME LOOP
             while (game_loop) 
 			{
+				
+				// INPUT SETUP
+				GameInput input = { 0 };
+				GameControllerInput keyboard_controller = { 0 };
+				keyboard_controller.is_connected = true;
+				input.controllers[0] = keyboard_controller; 
+
+
+
 				HDC window_device_context = GetDC(window);
 
 				// TODO(Nader): Should we poll this more frequently? 
@@ -523,14 +538,15 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 						// TODO(Nader): See if controller_state.dwPacketNumber increments too rapidly
 						XINPUT_GAMEPAD *pad = &controller_state.Gamepad;
 
-						bool dpad_up = (pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
-						bool dpad_down = (pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
-						bool dpad_left = (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-						bool dpad_right = (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
-						bool dpad_start = (pad->wButtons & XINPUT_GAMEPAD_START);
-						bool dpad_back = (pad->wButtons & XINPUT_GAMEPAD_BACK);
-						bool dpad_left_shoulder = (pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
-						bool dpad_right_shoulder = (pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+						bool up = (pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+						bool down = (pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+						bool left = (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+						bool right = (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+
+						bool start = (pad->wButtons & XINPUT_GAMEPAD_START);
+						bool back = (pad->wButtons & XINPUT_GAMEPAD_BACK);
+						bool left_shoulder = (pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+						bool right_shoulder = (pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
 						bool a_button = (pad->wButtons & XINPUT_GAMEPAD_A);
 						bool b_button = (pad->wButtons & XINPUT_GAMEPAD_B);
 						bool x_button = (pad->wButtons & XINPUT_GAMEPAD_X);
@@ -549,7 +565,7 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 					}
 				}
 
-				win32_process_pending_messages(&input.controller);
+				win32_process_pending_messages(&input.controllers[0]);
 
                 glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
                 glClearColor(0.8f, 0.2f, 0.5f, 1.0f);

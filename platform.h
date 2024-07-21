@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stdbool.h>
 #define HANDMADE_MATH_USE_DEGREES
 #include "HandmadeMath.h"
 
@@ -10,6 +9,10 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 typedef i32 b32;
+typedef b32 bool;
+
+#define true 1
+#define false 0
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -43,64 +46,4 @@ typedef HMM_Vec2 v2;
 #else
 #define asserts(expression)
 #endif
-
-/*
-
-half_transition refers to a press down or a release up. 
-We are recording the half_transition_count, the # of half transitions
-for a current frame.  
-
-*/
-typedef struct GameButtonState
-{
-	int half_transition_count;
-	b32 ended_down;
-} GameButtonState;
-
-typedef struct GameControllerInput
-{
-	b32 is_connected;
-	b32 is_analog;
-	f32 stick_average_x;
-	f32 stick_average_y;
-
-	union
-	{
-		GameButtonState buttons[12];
-		struct
-		{
-			GameButtonState move_up;
-			GameButtonState move_down;
-			GameButtonState move_left;
-			GameButtonState move_right;
-
-			GameButtonState action_up;
-			GameButtonState action_down;
-			GameButtonState action_left;
-			GameButtonState action_right;
-
-
-			GameButtonState left_shoulder;
-			GameButtonState right_shoulder;
-
-			GameButtonState select;
-			GameButtonState start;
-
-			// NOTE(Nader): Need to add lp, mp, hp, lk, mk, hk buttons
-			// NOTE(Nader): All buttons must be added above this line. 
-			GameButtonState terminator;
-		};
-	};
-} GameControllerInput;
-
-typedef struct GameInput
-{
-	GameButtonState mouse_buttons[5];
-	i32 mouse_x, mouse_y, mouse_z;
-
-	f32 dt_for_frame;
-
-	GameControllerInput controller;
-} GameInput;
-
 

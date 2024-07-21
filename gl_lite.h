@@ -28,7 +28,6 @@
 */
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #define GLDECL WINAPI
 
 #define GL_ARRAY_BUFFER                   0x8892 // Acquired from:
@@ -110,7 +109,7 @@ PAPAYA_GL_LIST
 PAPAYA_GL_LIST_WIN32
 #undef GLE
 
-bool gl_lite_init();
+b32 gl_lite_init();
 
 // =============================================================================
 
@@ -119,7 +118,7 @@ PAPAYA_GL_LIST
 PAPAYA_GL_LIST_WIN32
 #undef GLE
 
-bool gl_lite_init()
+b32 gl_lite_init()
 {
     HINSTANCE dll = LoadLibraryA("opengl32.dll");
     typedef PROC WINAPI wglGetProcAddressproc(LPCSTR lpszProc);

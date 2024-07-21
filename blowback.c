@@ -48,7 +48,7 @@ game_update_and_render(GameMemory *memory, GameInput *input, u32 shader_program)
     }
 
     glUseProgram(game_state->shader_program);
-    GameControllerInput keyboard_controller = input->controller;
+    GameControllerInput *input0 = &input->controllers[0];
     m4 view = m4_diagonal(1.0f);
     view = HMM_LookAt_RH(game_state->camera_position, 
                         HMM_AddV3(game_state->camera_position, game_state->camera_front), 
@@ -73,22 +73,25 @@ game_update_and_render(GameMemory *memory, GameInput *input, u32 shader_program)
                         game_state->position_y + adjust_y, 
                         0.0f);
 
-    if (keyboard_controller.move_right.ended_down) {
-        game_state->position_x += 10.0f;
-    }
+    if(!input0->is_analog)
+    {
+        if (input0->move_right.ended_down) {
+            game_state->position_x += 10.0f;
+        }
 
-    if (keyboard_controller.move_up.ended_down) {
-        game_state->position_y += 10.0f;
-    } 
+        if (input0->move_up.ended_down) {
+            game_state->position_y += 10.0f;
+        } 
 
-    if (keyboard_controller.move_down.ended_down) {
-        game_state->position_y -= 10.0f;
+        if (input0->move_down.ended_down) {
+            game_state->position_y -= 10.0f;
+        }
+        
+        if (input0->move_left.ended_down) {
+            game_state->position_x -= 10.0f;
+        }
     }
-    
-    if (keyboard_controller.move_left.ended_down) {
-        game_state->position_x -= 10.0f;
-    }
-    
+   
     m4 model = HMM_M4D(1.0f);
 
     // Scale

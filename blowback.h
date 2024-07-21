@@ -79,10 +79,10 @@ typedef struct GameControllerInput
 		GameButtonState buttons[12];
 		struct
 		{
-			GameButtonState move_up;
-			GameButtonState move_down;
-			GameButtonState move_left;
-			GameButtonState move_right;
+			GameButtonState up;
+			GameButtonState down;
+			GameButtonState left;
+			GameButtonState right;
 
 			GameButtonState action_up;
 			GameButtonState action_down;

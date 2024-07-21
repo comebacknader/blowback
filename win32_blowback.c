@@ -34,7 +34,8 @@
 
 /*
 
-NOTE(Nader): WORD is Windows for 16-bit value
+NOTE(Nader): WORD is Windows for 16-bit unsigned integer 
+NOTE(Nader): DWORD is Windows for 32-bit value unsigned integer
 NOTE(Nader): SHORT is Windows 16-bit signed value
 
 TODO(Nader): Render a tile map
@@ -315,19 +316,19 @@ win32_process_pending_messages(GameControllerInput *keyboard_controller)
 				}
 				else if (vk_code == VK_UP || vk_code == 'W')
 				{
-					keyboard_controller->move_up.ended_down = true;
+					keyboard_controller->up.ended_down = true;
 				}
 				else if (vk_code == VK_DOWN || vk_code == 'S')
 				{
-					keyboard_controller->move_down.ended_down = true;
+					keyboard_controller->down.ended_down = true;
 				}
 				else if (vk_code == VK_LEFT || vk_code == 'A')
 				{
-					keyboard_controller->move_left.ended_down = true;
+					keyboard_controller->left.ended_down = true;
 				}
 				else if (vk_code == VK_RIGHT || vk_code == 'D')
 				{
-					keyboard_controller->move_right.ended_down = true;
+					keyboard_controller->right.ended_down = true;
 				}
 			}
 		} break;	
@@ -346,19 +347,19 @@ win32_process_pending_messages(GameControllerInput *keyboard_controller)
 				}
 				else if (vk_code == VK_UP || vk_code == 'W')
 				{
-					keyboard_controller->move_up.ended_down = false;
+					keyboard_controller->up.ended_down = false;
 				}
 				else if (vk_code == VK_DOWN || vk_code == 'S')
 				{
-					keyboard_controller->move_down.ended_down = false;
+					keyboard_controller->down.ended_down = false;
 				}
 				else if (vk_code == VK_LEFT || vk_code == 'A')
 				{
-					keyboard_controller->move_left.ended_down = false;
+					keyboard_controller->left.ended_down = false;
 				}
 				else if (vk_code == VK_RIGHT || vk_code == 'D')
 				{
-					keyboard_controller->move_right.ended_down = false;
+					keyboard_controller->right.ended_down = false;
 				}
 			}
 		} break;
@@ -380,13 +381,14 @@ win32_get_wall_clock()
 };
 
 internal void
-win32_process_xinput_digital_button()
+win32_process_xinput_digital_button(DWORD x_input_button_state, GameButtonState *old_state, 
+									GameButtonState *new_state, DWORD button_bit)
 {
 	// NOTE(Nader): need to check if the button was ended_down before, if it was, 
 	// then there was a half transition, if it wasn't ended_down before, then there 
 	// wasn't a half_transition.
-	button->half_transition_count = (was_it_down_previously == button->ended_down) ? 1 : 0;
-	button->ended_down = (pad->wButtons & XINPUT_GAMEPAD_START); 
+	new_state->ended_down = ((x_input_button_state & button_bit)) == button_bit; 
+	new_state->half_transition_count = (old_state->ended_down != new_state->ended_down) ? 1 : 0;
 
 
 }
@@ -507,6 +509,11 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
+			// INPUT SETUP
+			GameInput input[2] = {0};
+			GameInput *new_input = &input[0];
+			GameInput *old_input = &input[1];
+
 			// START GAME LOOP TIMING  
 			LARGE_INTEGER last_counter;
 			QueryPerformanceCounter(&last_counter);
@@ -515,25 +522,27 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 			// GAME LOOP
             while (game_loop) 
 			{
-				
-				// INPUT SETUP
-				GameInput input = { 0 };
-				GameControllerInput keyboard_controller = { 0 };
-				keyboard_controller.is_connected = true;
-				input.controllers[0] = keyboard_controller; 
-
-
-
 				HDC window_device_context = GetDC(window);
 
 				// TODO(Nader): Should we poll this more frequently? 
+				DWORD max_controller_count = XUSER_MAX_COUNT;
+				// NOTE(Nader): This just makes sure that if XUSER_MAX_COUNT is more than 4, 
+				// we don't start filling out information past input.controllers[4] which would
+				// override memory past the 4th controller value into unknown memory. 
+				if (max_controller_count > array_count(new_input->controllers))
+				{
+					max_controller_count = array_count(new_input->controllers);
+				}
 				for (DWORD controller_index = 0;
-					controller_index < XUSER_MAX_COUNT;
+					controller_index < max_controller_count;
 					++controller_index)
 				{
+					GameControllerInput *old_controller = &old_input->controllers[controller_index];
+					GameControllerInput *new_controller = &new_input->controllers[controller_index];
+
 					XINPUT_STATE controller_state;
 					if (XInputGetState(controller_index, &controller_state) == ERROR_SUCCESS)
-					{
+						{
 						// NOTE(Nader): This controller is plugged in
 						// TODO(Nader): See if controller_state.dwPacketNumber increments too rapidly
 						XINPUT_GAMEPAD *pad = &controller_state.Gamepad;
@@ -543,8 +552,21 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 						bool left = (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
 						bool right = (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
 
-						bool start = (pad->wButtons & XINPUT_GAMEPAD_START);
-						bool back = (pad->wButtons & XINPUT_GAMEPAD_BACK);
+						win32_process_xinput_digital_button(pad->wButtons, &old_controller->down, 
+															&new_controller->down, XINPUT_GAMEPAD_DPAD_DOWN);
+						win32_process_xinput_digital_button(pad->wButtons, &old_controller->right, 
+															&new_controller->right, XINPUT_GAMEPAD_DPAD_RIGHT);
+						win32_process_xinput_digital_button(pad->wButtons, &old_controller->left, 
+															&new_controller->left, XINPUT_GAMEPAD_DPAD_LEFT);
+						win32_process_xinput_digital_button(pad->wButtons, &old_controller->up, 
+															&new_controller->up, XINPUT_GAMEPAD_DPAD_UP);
+						win32_process_xinput_digital_button(pad->wButtons, &old_controller->left_shoulder, 
+															&new_controller->left_shoulder, XINPUT_GAMEPAD_LEFT_SHOULDER);
+						win32_process_xinput_digital_button(pad->wButtons, &old_controller->right_shoulder, 
+															&new_controller->right_shoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER);
+
+						// bool start = (pad->wButtons & XINPUT_GAMEPAD_START);
+						// bool back = (pad->wButtons & XINPUT_GAMEPAD_BACK);
 						bool left_shoulder = (pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
 						bool right_shoulder = (pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
 						bool a_button = (pad->wButtons & XINPUT_GAMEPAD_A);
@@ -565,14 +587,14 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 					}
 				}
 
-				win32_process_pending_messages(&input.controllers[0]);
+				win32_process_pending_messages(&new_input->controllers[0]);
 
                 glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
                 glClearColor(0.8f, 0.2f, 0.5f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT);
 
 				// UPDATE & RENDER
-				game_update_and_render(&game_memory, &input, shader_program);
+				game_update_and_render(&game_memory, new_input, shader_program);
 
 				SwapBuffers(window_device_context);
 				ReleaseDC(window, window_device_context);
@@ -638,6 +660,10 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance,
 				// 	fps);
 				// OutputDebugStringA(metrics_text);
             }
+
+			GameInput *temp = new_input;
+			new_input = old_input;
+			old_input = temp;
 
 			// END GAME LOOP
 

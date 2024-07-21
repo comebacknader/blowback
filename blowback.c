@@ -75,19 +75,19 @@ game_update_and_render(GameMemory *memory, GameInput *input, u32 shader_program)
 
     if(!input0->is_analog)
     {
-        if (input0->move_right.ended_down) {
+        if (input0->right.ended_down) {
             game_state->position_x += 10.0f;
         }
 
-        if (input0->move_up.ended_down) {
+        if (input0->up.ended_down) {
             game_state->position_y += 10.0f;
         } 
 
-        if (input0->move_down.ended_down) {
+        if (input0->down.ended_down) {
             game_state->position_y -= 10.0f;
         }
         
-        if (input0->move_left.ended_down) {
+        if (input0->left.ended_down) {
             game_state->position_x -= 10.0f;
         }
     }
